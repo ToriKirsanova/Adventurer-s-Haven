@@ -4,6 +4,9 @@ from ctypes import wintypes
 import sys
 
 from configs.config import FPS
+from core.baseimage import BaseImage
+from core.clickableimage import ClickableImage
+from core.window import Window
 
 
 def get_taskbar_size_windows():
@@ -40,29 +43,13 @@ pygame.display.set_caption("Color Changer")
 hwnd = pygame.display.get_wm_info()["window"]
 ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, screen_height - window_height - get_taskbar_size_windows(), 0, 0, 0x0001)
 
-# Цвета
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (200, 200, 200)
-DARK_GRAY = (100, 100, 100)
-
-# Цвета для кнопок и окон
-COLORS = [
-    (255, 0, 0),  # Красный
-    (0, 255, 0),  # Зеленый
-    (0, 0, 255),  # Синий
-    (255, 255, 0),  # Желтый
-    (255, 0, 255)  # Пурпурный
-]
-
-# Текущий цвет окна
-current_color = WHITE
-
 # Размеры кнопок
 button_width = 100
 button_height = 50
 button_margin = 10
-
+DARK_GRAY = pygame.color.THECOLORS.get("darkgray")
+GRAY = pygame.color.THECOLORS.get("gray")
+BLACK = pygame.color.THECOLORS.get("black")
 # Позиции кнопок (справа)
 button_x = window_width - button_width - 20
 button_start_y = 20
@@ -78,12 +65,19 @@ for i in range(5):
     )
     buttons.append(button_rect)
 
-# Шрифт для текста кнопок
 font = pygame.font.SysFont(None, 24)
 clock = pygame.time.Clock()  # Clock для ограничения FPS
-# Основной цикл игры
-town = pygame.image.load("Images/Town.png")
-town = pygame.transform.scale(town, (window_width, window_height))
+
+town = BaseImage("Images/Town.png", 0, 0)
+tavern = ClickableImage("Images/tavern.png", 803, 0)
+town.scale(window_width, window_height)
+
+town_win = Window()
+town_win.append_image(town)
+town_win.append_image(tavern)
+windows = list()
+windows.append(town_win)
+
 running = True
 while running:
     clock.tick(FPS)
@@ -96,13 +90,14 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             # Проверяем клик по кнопкам
             mouse_pos = pygame.mouse.get_pos()
-            for i, button in enumerate(buttons):
-                if button.collidepoint(mouse_pos):
-                    current_color = COLORS[i]
+            clicked_image = None
+            for win in windows:
+                clicked_image = win.handle_click(mouse_pos)
+                if clicked_image:
+                    clicked_image
 
-    # Заливаем экран текущим цветом
-    # screen.fill(current_color)
-    screen.blit(town, town.get_rect())
+    for win in windows:
+        win.draw(screen)
 
     # Рисуем кнопки
     for i, button in enumerate(buttons):

@@ -1,6 +1,7 @@
 import pygame
 from pathlib import Path
 
+
 class BaseImage:
     """
     Базовый класс для отрисовки
@@ -14,6 +15,16 @@ class BaseImage:
         else:
             print(f"Попытка загрузить несуществующую картинку {image_path}")
 
+    def scale(self, width, height):
+        """
+
+        :param width:
+        :param height:
+        :return:
+        """
+        self.image = pygame.transform.scale(self.image, (width, height))
+        self.rect = self.image.get_rect()
+
     def draw(self, surface: pygame.Surface):
         """
         Метод для отрисовки изображения
@@ -21,4 +32,3 @@ class BaseImage:
         :param surface: полотно для отрисовки
         """
         surface.blit(self.image, self.rect)
-

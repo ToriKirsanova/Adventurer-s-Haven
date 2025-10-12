@@ -26,7 +26,7 @@ class ClickableImage(BaseImage):
 
         except IndexError as e:
             print(f"❌ Ошибка координат маски: {e}")
+            return False
         except AttributeError as e:
             print(f"❌ Попытка обратиться к непроиницилизированному изображению: {e}")
-        finally:
             return False

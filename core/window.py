@@ -1,6 +1,6 @@
 import pygame
 
-from core.clickableimage import BaseImage
+from core.clickableimage import BaseImage, ClickableImage
 
 
 class Window:
@@ -27,4 +27,13 @@ class Window:
         :param surface: полотно для отрисовки
         """
         for image in self.image_list:
-            surface.blit(image, image.rect)
+            image.draw(surface)
+
+    def handle_click(self, pos):
+        """
+        Обрабатывает клик по всем изображениям в окне
+        """
+        for image in self.image_list:
+            if isinstance(image, ClickableImage) and image.check_click(pos):
+                return image
+        return None
