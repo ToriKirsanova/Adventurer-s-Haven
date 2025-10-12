@@ -82,6 +82,8 @@ for i in range(5):
 font = pygame.font.SysFont(None, 24)
 clock = pygame.time.Clock()  # Clock для ограничения FPS
 # Основной цикл игры
+town = pygame.image.load("Images/Town.png")
+town = pygame.transform.scale(town, (window_width, window_height))
 running = True
 while running:
     clock.tick(FPS)
@@ -99,7 +101,8 @@ while running:
                     current_color = COLORS[i]
 
     # Заливаем экран текущим цветом
-    screen.fill(current_color)
+    # screen.fill(current_color)
+    screen.blit(town, town.get_rect())
 
     # Рисуем кнопки
     for i, button in enumerate(buttons):
