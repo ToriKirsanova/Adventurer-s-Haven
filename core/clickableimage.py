@@ -8,14 +8,6 @@ class ClickableImage(BaseImage):
     Класс, позволяющий сделать из изображения кнопку
     """
 
-    def draw(self, surface: pygame.Surface):
-        """
-        Метод для отрисовки изображения
-
-        :param surface: полотно для отрисовки
-        """
-        surface.blit(self.image, self.rect)
-
     def check_click(self, pos) -> bool:
         """
         Функция возвращает ответ, попал ли клик по иконке
