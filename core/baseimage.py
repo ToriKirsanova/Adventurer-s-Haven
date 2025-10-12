@@ -1,0 +1,16 @@
+import pygame
+from pathlib import Path
+
+class BaseImage:
+    """
+    Базовый класс для отрисовки
+    """
+
+    def __init__(self, image_path: str, x: float, y: float):
+        if Path(image_path).exists():
+            self.image = pygame.image.load(image_path).convert_alpha()
+            self.rect = self.image.get_rect(topleft=(x, y))
+            self.mask = pygame.mask.from_surface(self.image)
+        else:
+            print(f"Попытка загрузить несуществующую картинку {image_path}")
+

@@ -1,17 +1,12 @@
 import pygame
-from pathlib import Path
 
-class ClickableImage:
+from core.baseimage import BaseImage
+
+
+class ClickableImage(BaseImage):
     """
     Класс, позволяющий сделать из изображения кнопку
     """
-    def __init__(self, image_path: str, x: float, y: float):
-        if Path(image_path).exists():
-            self.image = pygame.image.load(image_path).convert_alpha()
-            self.rect = self.image.get_rect(topleft=(x, y))
-            self.mask = pygame.mask.from_surface(self.image)
-        else:
-            print(f"Попытка загрузить несуществующую картинку {image_path}")
 
     def draw(self, surface: pygame.Surface):
         """
