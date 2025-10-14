@@ -14,7 +14,7 @@ class Window:
 
     def append_image(self, img: "BaseImage"):
         """
-        Добавление новго изображения в окно
+        Добавление нового изображения в окно
 
         :param img: новое изображение
         """
