@@ -14,3 +14,11 @@ class BaseImage:
         else:
             print(f"Попытка загрузить несуществующую картинку {image_path}")
 
+    def draw(self, surface: pygame.Surface):
+        """
+        Метод для отрисовки изображения
+
+        :param surface: полотно для отрисовки
+        """
+        surface.blit(self.image, self.rect)
+
