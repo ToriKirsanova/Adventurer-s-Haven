@@ -115,6 +115,21 @@ class Adventurer(Character):
             "fishing": 0,
             "cooking": 0
         }
+        # Добавляем ману для магов
+        if character_class == CharacterClass.MAGE:
+            self.mana = 100
+            self.max_mana = 100
+            self.spell_power = 25
+        else:
+            self.mana = 0
+            self.max_mana = 0
+            self.spell_power = 0
+
+        # Добавляем ловкость для рейнджеров
+        if character_class == CharacterClass.RANGER:
+            self.agility = 1.2
+        else:
+            self.agility = 1.0
 
     def take_damage(self, damage: float) -> None:
         """Авантюрист получает урон с учетом защиты"""
