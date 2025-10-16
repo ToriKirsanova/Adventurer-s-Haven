@@ -2,11 +2,12 @@ import pygame
 import ctypes
 from ctypes import wintypes
 import sys
+import os
 
 from configs.config import FPS
 
 # Импортируем классы персонажей
-from core.character import Adventurer, CharacterClass
+from core.character import Adventurer, CharacterClass, GameWorld
 
 
 def get_taskbar_size_windows():
@@ -24,7 +25,44 @@ def get_taskbar_size_windows():
         return screen_height - rect.top
 
 
-# Инициализация Pygame
+def load_adventurer_images():
+    """Загружает изображения авантюристов"""
+    images = {}
+    try:
+        # Проверяем существование файлов и загружаем их
+        warrior_path = "C:\\Git\\Adventurer-s-Haven\\Images\\Warrior_1lvl.png"
+        if os.path.exists(warrior_path):
+            warrior_img = pygame.image.load(warrior_path)
+            images[CharacterClass.WARRIOR] = pygame.transform.scale(warrior_img, (50, 80))
+        else:
+            print(f"Файл не найден: {warrior_path}")
+            # Создаем заглушку
+            surf = pygame.Surface((50, 80))
+            surf.fill(RED)
+            images[CharacterClass.WARRIOR] = surf
+
+        # Заглушки для других классов (будут заменены реальными изображениями)
+        mage_surf = pygame.Surface((50, 80))
+        mage_surf.fill(BLUE)
+        images[CharacterClass.MAGE] = mage_surf
+
+        ranger_surf = pygame.Surface((50, 80))
+        ranger_surf.fill(GREEN)
+        images[CharacterClass.RANGER] = ranger_surf
+
+    except Exception as e:
+        print(f"Ошибка загрузки изображений: {e}")
+        # Создаем базовые заглушки
+        surf = pygame.Surface((50, 80))
+        surf.fill(GRAY)
+        images[CharacterClass.WARRIOR] = surf
+        images[CharacterClass.MAGE] = surf
+        images[CharacterClass.RANGER] = surf
+
+    return images
+
+
+# Инициализация
 pygame.init()
 
 # Получаем размеры экрана
@@ -111,6 +149,9 @@ class_types = [
     ("Рейнджер", CharacterClass.RANGER, GREEN)
 ]
 
+# Переменные для хранения кнопок классов
+class_buttons = []  # Будет содержать (rect, class_type, class_name)
+
 clock = pygame.time.Clock()
 
 
@@ -157,7 +198,31 @@ def draw_adventurer_info(screen, adventurer, x, y):
     screen.blit(gold_surface, (x + 120, y + 30))
 
 
-# Основной цикл игры
+def create_class_buttons():
+    """Создает и возвращает список кнопок для выбора класса"""
+    buttons = []
+    class_button_width = 200
+    class_button_height = 50
+
+    for i, (class_name, class_type, color) in enumerate(class_types):
+        button_rect = pygame.Rect(
+            window_width // 2 - class_button_width // 2,
+            window_height // 2 - 50 + i * (class_button_height + 20),
+            class_button_width,
+            class_button_height
+        )
+        buttons.append((button_rect, class_type, class_name, color))
+
+    return buttons
+
+
+# Загружаем изображения авантюристов
+adventurer_images = load_adventurer_images()
+
+# Игровой мир
+game_world = GameWorld()
+
+# Основной игровой цикл
 town = pygame.image.load("Images/Town.png")
 town = pygame.transform.scale(town, (window_width, window_height))
 running = True
@@ -165,11 +230,12 @@ running = True
 while running:
     clock.tick(FPS)
 
+    # Обработка событий
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:  # Выход по ESC
+            if event.key == pygame.K_ESCAPE:
                 running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
@@ -182,24 +248,13 @@ while running:
             # Кнопка создания авантюриста
             if create_adventurer_button.collidepoint(mouse_pos):
                 creating_adventurer = True
+                # Создаем кнопки классов при открытии меню
+                class_buttons = create_class_buttons()
                 print("Открыто меню выбора класса")
 
             # Кнопки выбора класса (только когда меню открыто)
             if creating_adventurer:
-                # Создаем кнопки классов в центре экрана
-                class_button_width = 200
-                class_button_height = 50
-                class_window_center_x = window_width // 2
-                class_window_center_y = window_height // 2
-
-                for i, (class_name, class_type, color) in enumerate(class_types):
-                    button_rect = pygame.Rect(
-                        class_window_center_x - class_button_width // 2,
-                        class_window_center_y - 80 + i * (class_button_height + 15),
-                        class_button_width,
-                        class_button_height
-                    )
-
+                for button_rect, class_type, class_name, color in class_buttons:
                     if button_rect.collidepoint(mouse_pos):
                         # Создаем авантюриста
                         adventurer_name = f"Авантюрист {adventurer_counter}"
@@ -207,7 +262,13 @@ while running:
                         adventurers.append(new_adventurer)
                         adventurer_counter += 1
                         creating_adventurer = False
+                        class_buttons = []  # Очищаем кнопки
                         print(f"Создан новый авантюрист: {adventurer_name} ({class_name})")
+                        break  # Выходим из цикла после создания
+
+    # Обновление авантюристов
+    for adventurer in adventurers:
+        adventurer.update(game_world)
 
     # Отрисовка фона
     screen.blit(town, town.get_rect())
@@ -243,18 +304,8 @@ while running:
         title_rect = title_text.get_rect(center=(window_width // 2, window_height // 2 - 100))
         screen.blit(title_text, title_rect)
 
-        # Кнопки классов
-        class_button_width = 200
-        class_button_height = 50
-
-        for i, (class_name, class_type, color) in enumerate(class_types):
-            button_rect = pygame.Rect(
-                window_width // 2 - class_button_width // 2,
-                window_height // 2 - 50 + i * (class_button_height + 20),
-                class_button_width,
-                class_button_height
-            )
-
+        # Кнопки классов (используем заранее созданные кнопки)
+        for button_rect, class_type, class_name, color in class_buttons:
             # Рисуем кнопку класса
             mouse_pos = pygame.mouse.get_pos()
             if button_rect.collidepoint(mouse_pos):
@@ -289,6 +340,30 @@ while running:
         x = 20 + col * 270
         y = 20 + row * 100
         draw_adventurer_info(screen, adventurer, x, y)
+
+    # Отрисовка авантюристов
+    for adventurer in adventurers:
+        if adventurer.is_alive:
+            # Получаем изображение для класса авантюриста
+            image = adventurer_images.get(adventurer.character_class)
+            if image:
+                # Отображаем авантюриста
+                screen.blit(image, (adventurer.x, adventurer.y))
+
+                # Отображаем имя и здоровье над авантюристом
+                name_text = small_font.render(adventurer.name, True, BLACK)
+                screen.blit(name_text, (adventurer.x - 10, adventurer.y - 20))
+
+                # Полоска здоровья
+                health_width = 50
+                health_ratio = adventurer.health / adventurer.max_health
+                current_health_width = int(health_width * health_ratio)
+
+                health_bg = pygame.Rect(adventurer.x, adventurer.y - 10, health_width, 5)
+                health_bar = pygame.Rect(adventurer.x, adventurer.y - 10, current_health_width, 5)
+
+                pygame.draw.rect(screen, RED, health_bg)
+                pygame.draw.rect(screen, GREEN, health_bar)
 
     # Статистика в левом верхнем углу
     stats_bg = pygame.Rect(10, 10, 200, 60)
