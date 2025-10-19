@@ -1,6 +1,7 @@
 import pygame
 from pathlib import Path
 
+
 class BaseImage:
     """
     Базовый класс для отрисовки
@@ -21,4 +22,3 @@ class BaseImage:
         :param surface: полотно для отрисовки
         """
         surface.blit(self.image, self.rect)
-
