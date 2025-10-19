@@ -5,27 +5,39 @@ from configs.config import *
 
 class Button(Rect):
     """
-    Простой класс кнопки для отображения текста/изображений
+    Класс кнопки с поддержкой относительных размеров
     """
 
-    def __init__(self, left: float, top: float, width: float, height: float, enabled: bool = True, relative: bool = True):
+    def __init__(self, left: float, top: float, width: float, height: float,
+                 enabled: bool = True, relative: bool = True):
         """
         Конструктор
 
-        :param left: левая граница
-        :param top: верхняя граница
-        :param width: ширина
-        :param height: высота
+        :param left: левая граница (в пикселях или долях)
+        :param top: верхняя граница (в пикселях или долях)
+        :param width: ширина (в пикселях или долях)
+        :param height: высота (в пикселях или долях)
         :param enabled: обрабатываются ли клики
         :param relative: если True, то координаты и размеры считаются в долях от экрана
         """
-        if relative:
-            left = int(left * scaling_system.current_width)
-            top = int(top * scaling_system.current_height)
-            width = int(width * scaling_system.current_width)
-            height = int(height * scaling_system.current_height)
+        self.__relative = relative
+        self.__relative_left = left
+        self.__relative_top = top
+        self.__relative_width = width
+        self.__relative_height = height
 
-        super().__init__(left, top, width, height)
+        if relative:
+            abs_left = int(left * scaling_system.current_width)
+            abs_top = int(top * scaling_system.current_height)
+            abs_width = int(width * scaling_system.current_width)
+            abs_height = int(height * scaling_system.current_height)
+        else:
+            abs_left = left
+            abs_top = top
+            abs_width = width
+            abs_height = height
+
+        super().__init__(abs_left, abs_top, abs_width, abs_height)
         self.__text = ""
         self.__color_text = BLACK
         self.__font_size = scaling_system.scale(20)
@@ -36,7 +48,6 @@ class Button(Rect):
         self.__action = None
         self.__action_args = ()
         self.__action_kwargs = {}
-        self.__relative = relative
 
     @property
     def action_args(self):
@@ -54,20 +65,27 @@ class Button(Rect):
             self.__action(*self.__action_args, **self.__action_kwargs)
 
     def update_scale(self):
+        """Обновляет размеры и позицию при изменении масштаба"""
         if self.__relative:
-            self.x = int(self.x * scaling_system.scale_x)
-            self.y = int(self.y * scaling_system.scale_y)
-            self.width = int(self.width * scaling_system.scale_x)
-            self.height = int(self.height * scaling_system.scale_y)
+            abs_left = int(self.__relative_left * scaling_system.current_width)
+            abs_top = int(self.__relative_top * scaling_system.current_height)
+            abs_width = int(self.__relative_width * scaling_system.current_width)
+            abs_height = int(self.__relative_height * scaling_system.current_height)
+
+            self.x = abs_left
+            self.y = abs_top
+            self.width = abs_width
+            self.height = abs_height
 
         self.__font_size = scaling_system.scale(20)
         self.__font = font.SysFont('Arial', self.__font_size)
-        if self.image is not None:
-            self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+        if self.__image is not None:
+            self.__image = pygame.transform.scale(self.__image, (self.width, self.height))
 
     def draw(self, surface: Surface):
         """
-        Метод для отрисовки изображения
+        Метод для отрисовки кнопки
 
         :param surface: полотно для отрисовки
         """
@@ -76,7 +94,7 @@ class Button(Rect):
         if self.image:
             surface.blit(self.image, self)
         if self.text:
-            text_surface = self.font.render(self.text, True, BLACK)
+            text_surface = self.font.render(self.text, True, self.color_text)
             text_rect = text_surface.get_rect(center=self.center)
             surface.blit(text_surface, text_rect)
 
@@ -95,6 +113,15 @@ class Button(Rect):
     @font.setter
     def font(self, new_font: font):
         self.__font = new_font
+
+    @property
+    def font_size(self):
+        return self.__font_size
+
+    @font_size.setter
+    def font_size(self, size: int):
+        self.__font_size = scaling_system.scale(size)
+        self.__font = font.SysFont('Arial', self.__font_size)
 
     @property
     def image(self):
@@ -128,4 +155,10 @@ class Button(Rect):
     def enabled(self, is_enabled: bool):
         self.__enabled = is_enabled
 
+    @property
+    def action(self):
+        return self.__action
 
+    @action.setter
+    def action(self, action):
+        self.__action = action

@@ -26,33 +26,27 @@ class ScalingSystem:
         self.reference_height = reference_height
         self.current_width = reference_width
         self.current_height = reference_height
-        self.scale_x = 1.0
-        self.scale_y = 1.0
         self.scale_factor = SCALE
 
     def update(self, current_width, current_height):
+        """Обновляет масштабные коэффициенты"""
         self.current_width = current_width
         self.current_height = current_height
-        self.scale_x = current_width / self.reference_width
-        self.scale_y = current_height / self.reference_height
-        self.scale_factor = min(self.scale_x, self.scale_y)  # Сохраняем пропорции
-
-    def scale_x(self, value):
-        return int(value * self.scale_x)
-
-    def scale_y(self, value):
-        return int(value * self.scale_y)
-
-    def scale(self, value):
-        return int(value * self.scale_factor)
-
-    def scale_rect(self, x, y, width, height):
-        return (
-            int(x * self.scale_x),
-            int(y * self.scale_y),
-            int(width * self.scale_x),
-            int(height * self.scale_y)
+        self.scale_factor = min(
+            current_width / self.reference_width,
+            current_height / self.reference_height
         )
 
+    def scale(self, value):
+        """Масштабирует значение пропорционально"""
+        return int(value * self.scale_factor)
 
+    def scale_absolute(self, relative_value, is_width=True):
+        """Конвертирует относительное значение в абсолютное"""
+        if is_width:
+            return int(relative_value * self.current_width)
+        return int(relative_value * self.current_height)
+
+
+# Глобальный объект масштабирования
 scaling_system = ScalingSystem()

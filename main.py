@@ -8,72 +8,77 @@ import sys
 import os
 
 from configs.config import *
-
-# Импортируем классы персонажей
 from core.character import Adventurer, CharacterClass, GameWorld
 from ui.button import Button
 
 
 def get_taskbar_size_windows():
     """Получить размер панели задач в Windows"""
-    # Получаем handle панели задач
     taskbar_hwnd = ctypes.windll.user32.FindWindowW("Shell_TrayWnd", None)
-
-    # Получаем прямоугольник панели задач
     rect = ctypes.wintypes.RECT()
     ctypes.windll.user32.GetWindowRect(taskbar_hwnd, ctypes.byref(rect))
-    # Определяем положение панели задач
     screen_height = ctypes.windll.user32.GetSystemMetrics(1)
 
     if rect.top != 0:  # снизу
         return screen_height - rect.top
 
 
-def draw_adventurer_info(screen, adventurer, x, y):
-    """Отображает информацию об авантюристе"""
-    # Фон информации
-    info_rect = pygame.Rect(x, y, 250, 80)
-    pygame.draw.rect(screen, LIGHT_BLUE, info_rect)
-    pygame.draw.rect(screen, BLACK, info_rect, 2)
+def draw_adventurer_info(screen, adventurer, rel_x, rel_y):
+    """Отображает информацию об авантюристе с относительными координатами"""
+    abs_x = int(rel_x * scaling_system.current_width)
+    abs_y = int(rel_y * scaling_system.current_height)
+    print(f"Drawing adventurer at relative ({rel_x}, {rel_y}) -> absolute ({abs_x}, {abs_y})")
+    info_width = 0.2  # 20% ширины экрана
+    info_height = 0.1  # 10% высоты экрана
+    abs_width = int(info_width * scaling_system.current_width)
+    abs_height = int(info_height * scaling_system.current_height)
 
-    # Имя и класс
+    info_rect = pygame.Rect(abs_x, abs_y, abs_width, abs_height)
+    pygame.draw.rect(screen, LIGHT_BLUE, info_rect)
+    pygame.draw.rect(screen, WHITE, info_rect, scaling_system.scale(2))
+
+    padding = scaling_system.scale(10)
+    small_font_size = scaling_system.scale(16)
+    small_font = pygame.font.SysFont('Arial', small_font_size)
+
     name_text = f"{adventurer.name} - {adventurer.character_class.value}"
     name_surface = small_font.render(name_text, True, BLACK)
-    screen.blit(name_surface, (x + 10, y + 10))
+    screen.blit(name_surface, (abs_x + padding, abs_y + padding))
 
-    # Уровень
     level_text = f"Ур. {adventurer.level}"
     level_surface = small_font.render(level_text, True, BLACK)
-    screen.blit(level_surface, (x + 10, y + 30))
+    screen.blit(level_surface, (abs_x + padding, abs_y + padding * 3))
 
-    # Здоровье
     health_text = f"HP: {adventurer.health:.0f}/{adventurer.max_health:.0f}"
     health_surface = small_font.render(health_text, True, BLACK)
-    screen.blit(health_surface, (x + 10, y + 50))
+    screen.blit(health_surface, (abs_x + padding, abs_y + padding * 5))
 
-    # Золото
     gold_text = f"Золото: {adventurer.gold}"
     gold_surface = small_font.render(gold_text, True, BLACK)
-    screen.blit(gold_surface, (x + 120, y + 30))
+    gold_x = abs_x + int(0.1 * scaling_system.current_width)  # 10% от ширины экрана
+    screen.blit(gold_surface, (gold_x, abs_y + padding * 3))
 
 
 def create_class_buttons():
-    """Создает и возвращает список кнопок для выбора класса"""
+    """Создает кнопки для выбора класса с относительными размерами"""
     buttons = []
-    class_button_width = 200
-    class_button_height = 50
+
+    # Относительные размеры кнопок
+    class_button_width = 0.15  # 15% ширины
+    class_button_height = 0.07  # 7% высоты
+    button_spacing = 0.03  # 3% высоты между кнопками
 
     for i, (class_name, class_type, color) in enumerate(class_types):
         button = Button(
-            window_width // 2 - class_button_width // 2,
-            window_height // 2 - 50 + i * (class_button_height + 20),
+            0.5 - class_button_width / 2,  # Центр по X
+            0.4 + i * (class_button_height + button_spacing),  # Вертикальное расположение
             class_button_width,
             class_button_height
         )
         button.text = class_name
         button.color = color
         button.color_text = WHITE
-        # Устанавливаем действие с параметрами
+        button.font_size = 20
         button.set_action(create_adventurer, class_type, class_name)
         buttons.append(button)
 
@@ -81,38 +86,39 @@ def create_class_buttons():
 
 
 def load_adventurer_images():
-    """Загружает изображения авантюристов"""
+    """Загружает и масштабирует изображения авантюристов"""
     images = {}
     try:
-        # Проверяем существование файлов и загружаем их
+        # Относительный размер персонажей
+        base_width = 0.03  # 3% ширины экрана
+        base_height = 0.08  # 8% высоты экрана
+
+        abs_width = scaling_system.scale_absolute(base_width, True)
+        abs_height = scaling_system.scale_absolute(base_height, False)
+        base_size = (abs_width, abs_height)
+
         warrior_path = str(Path(os.path.dirname(__file__)) / "Images" / "Warrior_1lvl.png")
         if os.path.exists(warrior_path):
             warrior_img = pygame.image.load(warrior_path)
-            images[CharacterClass.WARRIOR] = pygame.transform.scale(warrior_img, (50, 80))
+            images[CharacterClass.WARRIOR] = pygame.transform.scale(warrior_img, base_size)
         else:
-            print(f"Файл не найден: {warrior_path}")
-            # Создаем заглушку
-            surf = pygame.Surface((50, 80))
+            surf = pygame.Surface(base_size)
             surf.fill(RED)
             images[CharacterClass.WARRIOR] = surf
 
-        # Заглушки для других классов (будут заменены реальными изображениями)
-        mage_surf = pygame.Surface((50, 80))
-        mage_surf.fill(BLUE)
-        images[CharacterClass.MAGE] = mage_surf
-
-        ranger_surf = pygame.Surface((50, 80))
-        ranger_surf.fill(GREEN)
-        images[CharacterClass.RANGER] = ranger_surf
+        # Заглушки для других классов
+        for class_type, color in [(CharacterClass.MAGE, BLUE), (CharacterClass.RANGER, GREEN)]:
+            surf = pygame.Surface(base_size)
+            surf.fill(color)
+            images[class_type] = surf
 
     except Exception as e:
         print(f"Ошибка загрузки изображений: {e}")
-        # Создаем базовые заглушки
-        surf = pygame.Surface((50, 80))
+        base_size = (scaling_system.scale(50), scaling_system.scale(80))
+        surf = pygame.Surface(base_size)
         surf.fill(GRAY)
-        images[CharacterClass.WARRIOR] = surf
-        images[CharacterClass.MAGE] = surf
-        images[CharacterClass.RANGER] = surf
+        for class_type in CharacterClass:
+            images[class_type] = surf
 
     return images
 
@@ -132,8 +138,31 @@ def create_adventurer(class_type, class_name):
     adventurers.append(new_adventurer)
     adventurer_counter += 1
     creating_adventurer = False
-    class_buttons = []  # Очищаем кнопки
+    class_buttons = []
     print(f"Создан новый авантюрист: {adventurer_name} ({class_name})")
+
+
+def update_ui_scale():
+    """Обновляет масштаб всех UI элементов"""
+    global buttons, class_buttons, adventurer_images, town, font, small_font, title_font
+
+    # Обновляем системные шрифты
+    font = pygame.font.SysFont('Arial', scaling_system.scale(20))
+    small_font = pygame.font.SysFont('Arial', scaling_system.scale(16))
+    title_font = pygame.font.SysFont('Arial', scaling_system.scale(24), bold=True)
+
+    # Обновляем кнопки
+    for button in buttons:
+        button.update_scale()
+
+    for button in class_buttons:
+        button.update_scale()
+
+    # Перезагружаем изображения с новым масштабом
+    adventurer_images = load_adventurer_images()
+
+    # Масштабируем фон города
+    town = pygame.transform.scale(original_town, (window_width, window_height))
 
 
 # Инициализация
@@ -148,59 +177,63 @@ screen_height = screen_info.current_h
 window_width = screen_width
 window_height = screen_height // 3
 
-# Создаем окно без рамок
+# Инициализируем систему масштабирования
+scaling_system.update(window_width, window_height)
+
+# Создаем окно
 screen = pygame.display.set_mode((window_width, window_height), pygame.NOFRAME)
 pygame.display.set_caption("Adventure Town Manager")
 
+# Позиционируем окно
 hwnd = pygame.display.get_wm_info()["window"]
-ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, screen_height - window_height - get_taskbar_size_windows(), 0, 0, 0x0001)
+taskbar_height = get_taskbar_size_windows() or 40
+ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, screen_height - window_height - taskbar_height, 0, 0, 0x0001)
 
-# Текущий цвет окна
-current_color = WHITE
+# ОТНОСИТЕЛЬНЫЕ РАЗМЕРЫ ДЛЯ ВСЕГО UI
+button_width = 0.12  # 12% ширины
+button_height = 0.06  # 6% высоты
+button_margin = 0.015  # 1.5% высоты
+button_start_x = 0.85  # 85% ширины (правая часть)
+button_start_y = 0.05  # 5% высоты (отступ сверху)
 
-# Размеры кнопок
-button_width = 120
-button_height = 40
-button_margin = 10
-
-# Позиции кнопок (справа)
-button_x = window_width - button_width - 20
-button_start_y = 20
-
-# Создаем список основных кнопок
+# Создаем список основных кнопок (справа)
 buttons = []
-for i in range(5):
+button_texts = ["Город", "Гильдия", "Магазин", "Таверна", "Настройки"]
+
+for i, text in enumerate(button_texts):
     button = Button(
-        button_x,
+        button_start_x,
         button_start_y + i * (button_height + button_margin),
         button_width,
         button_height
     )
-    button.text = f"Color {i + 1}"
+    button.text = text
     button.color = WHITE
+    button.color_text = BLACK
     buttons.append(button)
 
 # Кнопка создания авантюриста
 create_adventurer_button = Button(
-    button_x,
-    button_start_y + 5 * (button_height + button_margin),
+    button_start_x,
+    button_start_y + len(button_texts) * (button_height + button_margin),
     button_width,
     button_height
 )
 create_adventurer_button.text = "Создать авантюриста"
 create_adventurer_button.color = BLUE
+create_adventurer_button.color_text = WHITE
 create_adventurer_button.set_action(set_creating_adventurer, True)
 buttons.append(create_adventurer_button)
 
-# Шрифты
-font = pygame.font.SysFont('Arial', 20)
-small_font = pygame.font.SysFont('Arial', 16)
-title_font = pygame.font.SysFont('Arial', 24, bold=True)
+# Инициализация шрифтов
+font = pygame.font.SysFont('Arial', scaling_system.scale(20))
+small_font = pygame.font.SysFont('Arial', scaling_system.scale(16))
+title_font = pygame.font.SysFont('Arial', scaling_system.scale(24), bold=True)
 
 # Состояния игры
 creating_adventurer = False
-adventurers = []  # Список созданных авантюристов
-adventurer_counter = 1  # Счетчик для имен
+adventurers = []
+adventurer_counter = 1
 
 # Классы авантюристов
 class_types = [
@@ -209,20 +242,20 @@ class_types = [
     ("Рейнджер", CharacterClass.RANGER, GREEN)
 ]
 
-# Переменные для хранения кнопок классов
-class_buttons = []  # Содержит объекты Button
+class_buttons = []
 
 clock = pygame.time.Clock()
 
-# Загружаем изображения авантюристов
+# Загружаем изображения
 adventurer_images = load_adventurer_images()
 
 # Игровой мир
 game_world = GameWorld()
 
-# Основной игровой цикл
-town = pygame.image.load("Images/Town.png")
-town = pygame.transform.scale(town, (window_width, window_height))
+# Загружаем и масштабируем фон
+original_town = pygame.image.load("Images/Town.png")
+town = pygame.transform.scale(original_town, (window_width, window_height))
+
 running = True
 
 while running:
@@ -238,124 +271,94 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
 
-            # Проверяем клик по основным кнопкам
             for button in buttons:
                 if button.collidepoint(mouse_pos) and button.enabled:
                     button.execute_action()
 
-            # Кнопки выбора класса (только когда меню открыто)
             if creating_adventurer:
                 for button in class_buttons:
                     if button.collidepoint(mouse_pos) and button.enabled:
                         button.execute_action()
-                        break  # Выходим из цикла после создания
+                        break
 
-    # Обновление авантюристов
     for adventurer in adventurers:
         adventurer.update(game_world, time.time())
 
-    # Отрисовка фона
-    screen.blit(town, town.get_rect())
+    screen.blit(town, (0, 0))
 
-    # Рисуем основные кнопки
     for button in buttons:
         button.draw(screen)
 
-    # Окно выбора класса (если активно создание)
     if creating_adventurer:
         # Затемнение фона
         overlay = pygame.Surface((window_width, window_height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 128))
         screen.blit(overlay, (0, 0))
 
-        # Окно выбора класса
-        class_window_width = 400
-        class_window_height = 300
+        class_window_width = 0.3  # 30% ширины
+        class_window_height = 0.4  # 40% высоты
+
+        abs_width = scaling_system.scale_absolute(class_window_width, True)
+        abs_height = scaling_system.scale_absolute(class_window_height, False)
+
         class_window = pygame.Rect(
-            window_width // 2 - class_window_width // 2,
-            window_height // 2 - class_window_height // 2,
-            class_window_width,
-            class_window_height
+            window_width // 2 - abs_width // 2,
+            window_height // 2 - abs_height // 2,
+            abs_width,
+            abs_height
         )
         pygame.draw.rect(screen, WHITE, class_window)
-        pygame.draw.rect(screen, BLACK, class_window, 3)
+        pygame.draw.rect(screen, BLACK, class_window, scaling_system.scale(3))
 
         # Заголовок
         title_text = title_font.render("Выберите класс авантюриста", True, BLACK)
-        title_rect = title_text.get_rect(center=(window_width // 2, window_height // 2 - 100))
+        title_rect = title_text.get_rect(center=(window_width // 2,
+                                                 scaling_system.scale_absolute(0.35, False)))
         screen.blit(title_text, title_rect)
 
-        # Кнопки классов (используем объекты Button)
+        # Кнопки классов
         for button in class_buttons:
             button.draw(screen)
 
-            # Описание класса (дополнительная информация)
-            desc_y = button.bottom + 5
-            if button.action_args and len(button.action_args) > 0:
-                class_type = button.action_args[0]
-                if class_type == CharacterClass.WARRIOR:
-                    desc_text = "Сильный боец ближнего боя"
-                elif class_type == CharacterClass.MAGE:
-                    desc_text = "Мощный заклинатель"
-                else:  # RANGER
-                    desc_text = "Меткий стрелок и следопыт"
-
-                desc_surface = small_font.render(desc_text, True, BLACK)
-                desc_rect = desc_surface.get_rect(center=(window_width // 2, desc_y))
-                screen.blit(desc_surface, desc_rect)
-
-    # Отображаем созданных авантюристов
     for i, adventurer in enumerate(adventurers):
         row = i // 4  # 4 авантюриста в строке
         col = i % 4
-        x = 20 + col * 270
-        y = 20 + row * 100
-        draw_adventurer_info(screen, adventurer, x, y)
+        rel_x = 0.02 + col * 0.25  # 2% отступ + 25% на каждого
+        rel_y = 0.02 + row * 0.15  # 2% отступ + 15% на строку
+        draw_adventurer_info(screen, adventurer, rel_x, rel_y)
 
-    # Отрисовка авантюристов
     for adventurer in adventurers:
         if adventurer.is_alive:
-            # Получаем изображение для класса авантюриста
             image = adventurer_images.get(adventurer.character_class)
             if image:
-                # Отображаем авантюриста
                 screen.blit(image, (adventurer.x, adventurer.y))
 
-                # Отображаем имя и здоровье над авантюристом
-                name_text = small_font.render(adventurer.name, True, BLACK)
-                screen.blit(name_text, (adventurer.x - 10, adventurer.y - 20))
-
-                # Полоска здоровья
-                health_width = 50
-                health_ratio = adventurer.health / adventurer.max_health
-                current_health_width = int(health_width * health_ratio)
-
-                health_bg = pygame.Rect(adventurer.x, adventurer.y - 10, health_width, 5)
-                health_bar = pygame.Rect(adventurer.x, adventurer.y - 10, current_health_width, 5)
-
-                pygame.draw.rect(screen, RED, health_bg)
-                pygame.draw.rect(screen, GREEN, health_bar)
-
-    # Статистика в левом верхнем углу
-    stats_bg = pygame.Rect(10, 10, 200, 60)
-    pygame.draw.rect(screen, (255, 255, 255, 180), stats_bg)
-    pygame.draw.rect(screen, BLACK, stats_bg, 1)
+    stats_bg_width = 0.15  # 15% ширины
+    stats_bg_height = 0.08  # 8% высоты
+    stats_bg = pygame.Rect(
+        scaling_system.scale_absolute(0.02, True),
+        scaling_system.scale_absolute(0.02, False),
+        scaling_system.scale_absolute(stats_bg_width, True),
+        scaling_system.scale_absolute(stats_bg_height, False)
+    )
+    pygame.draw.rect(screen, WHITE, stats_bg)
+    pygame.draw.rect(screen, WHITE, stats_bg, scaling_system.scale(1))
 
     total_adventurers = len(adventurers)
-    stats_text = f"Всего авантюристов: {total_adventurers}"
+    stats_text = f"Авантюристы: {total_adventurers}"
     stats_surface = small_font.render(stats_text, True, BLACK)
-    screen.blit(stats_surface, (20, 20))
+    screen.blit(stats_surface, (scaling_system.scale_absolute(0.03, True),
+                                scaling_system.scale_absolute(0.03, False)))
 
     # Подсказка
     if total_adventurers == 0 and not creating_adventurer:
         hint_text = "Нажмите 'Создать авантюриста' чтобы начать!"
         hint_surface = font.render(hint_text, True, YELLOW)
-        hint_rect = hint_surface.get_rect(center=(window_width // 2, window_height - 30))
+        hint_rect = hint_surface.get_rect(center=(window_width // 2,
+                                                  scaling_system.scale_absolute(0.95, False)))
         screen.blit(hint_surface, hint_rect)
 
-    # Обновляем экран
     pygame.display.flip()
 
-# Выход из Pygame
 pygame.quit()
 sys.exit()
