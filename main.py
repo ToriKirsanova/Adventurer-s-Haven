@@ -1,3 +1,5 @@
+import time
+
 import pygame
 import ctypes
 from ctypes import wintypes
@@ -268,7 +270,7 @@ while running:
 
     # Обновление авантюристов
     for adventurer in adventurers:
-        adventurer.update(game_world)
+        adventurer.update(game_world, time.time())
 
     # Отрисовка фона
     screen.blit(town, town.get_rect())
