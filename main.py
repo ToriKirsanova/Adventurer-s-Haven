@@ -273,6 +273,8 @@ game_world = GameWorld()
 init_windows()
 running = True
 
+curr_click_button = None
+
 while running:
     clock.tick(FPS)
 
@@ -288,10 +290,12 @@ while running:
 
             for button in buttons:
                 if button.collidepoint(mouse_pos) and button.enabled:
+                    button.set_highlight()
                     win_num = button.execute_action()
-                    if win_num != cur_win_num and len(list_window) > win_num:
+                    if win_num is not None and win_num != cur_win_num and len(list_window) > win_num:
                         cur_win_num = win_num
                         current_window = list_window[cur_win_num]
+                    curr_click_button = button
                     break
 
             if creating_adventurer:
@@ -299,6 +303,11 @@ while running:
                     if button.collidepoint(mouse_pos) and button.enabled:
                         button.execute_action()
                         break
+
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if curr_click_button is not None:
+                curr_click_button.unset_highlight()
+                curr_click_button = None
 
     for adventurer in adventurers:
         adventurer.update(game_world, time.time())

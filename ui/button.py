@@ -44,10 +44,19 @@ class Button(Rect):
         self.__font = font.SysFont('Arial', self.__font_size)
         self.__image = None
         self.__color = None
+        self.__color_highlight = GRAY
         self.__enabled = enabled
         self.__action = None
         self.__action_args = ()
         self.__action_kwargs = {}
+
+    def set_highlight(self):
+        self.old_color = self.__color
+        self.color = self.__color_highlight
+
+    def unset_highlight(self):
+        if hasattr(self, 'old_color'):
+            self.color = self.old_color
 
     @property
     def action_args(self):
