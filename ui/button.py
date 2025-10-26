@@ -62,7 +62,7 @@ class Button(Rect):
     def execute_action(self):
         """Выполнение действия с аргументами"""
         if self.__action and self.__enabled:
-            self.__action(*self.__action_args, **self.__action_kwargs)
+            return self.__action(*self.__action_args, **self.__action_kwargs)
 
     def update_scale(self):
         """Обновляет размеры и позицию при изменении масштаба"""

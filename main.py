@@ -8,7 +8,10 @@ import sys
 import os
 
 from configs.config import *
+from core.baseimage import BaseImage
 from core.character import Adventurer, CharacterClass, GameWorld
+from core.clickableimage import ClickableImage
+from core.window import Window
 from ui.button import Button
 
 
@@ -27,9 +30,8 @@ def draw_adventurer_info(screen, adventurer, rel_x, rel_y):
     """Отображает информацию об авантюристе с относительными координатами"""
     abs_x = int(rel_x * scaling_system.current_width)
     abs_y = int(rel_y * scaling_system.current_height)
-    print(f"Drawing adventurer at relative ({rel_x}, {rel_y}) -> absolute ({abs_x}, {abs_y})")
-    info_width = 0.2  # 20% ширины экрана
-    info_height = 0.1  # 10% высоты экрана
+    info_width = 0.1  # 10% ширины экрана
+    info_height = 0.2  # 20% высоты экрана
     abs_width = int(info_width * scaling_system.current_width)
     abs_height = int(info_height * scaling_system.current_height)
 
@@ -55,7 +57,7 @@ def draw_adventurer_info(screen, adventurer, rel_x, rel_y):
 
     gold_text = f"Золото: {adventurer.gold}"
     gold_surface = small_font.render(gold_text, True, BLACK)
-    gold_x = abs_x + int(0.1 * scaling_system.current_width)  # 10% от ширины экрана
+    gold_x = abs_x + int(0.05 * scaling_system.current_width)  # 5% от ширины экрана
     screen.blit(gold_surface, (gold_x, abs_y + padding * 3))
 
 
@@ -161,8 +163,24 @@ def update_ui_scale():
     # Перезагружаем изображения с новым масштабом
     adventurer_images = load_adventurer_images()
 
-    # Масштабируем фон города
-    town = pygame.transform.scale(original_town, (window_width, window_height))
+
+def init_windows():
+    """Инициализация всех окон на старте игры"""
+    global current_window, cur_win_num, list_window
+    # Загружаем и масштабируем фон
+    town = BaseImage("Images/Town.png", 0, 0, (window_width, window_height))
+    tavern = ClickableImage("Images/tavern.png",
+                           scaling_system.scale_absolute(0.417),
+                           scaling_system.scale_absolute(0.03, False))
+    town_window = Window([town, tavern])
+
+    test_img = ClickableImage("Images/Town1.png", 0, 0, (window_width, window_height))
+    test_window = Window([test_img])
+    # todo: пример для демонстрации работы смены окон, заменить на другое позже
+
+    list_window = [town_window, test_window]
+    cur_win_num = 0
+    current_window = list_window[cur_win_num]
 
 
 # Инициализация
@@ -210,6 +228,7 @@ for i, text in enumerate(button_texts):
     button.text = text
     button.color = WHITE
     button.color_text = BLACK
+    button.set_action(lambda num: num, i)
     buttons.append(button)
 
 # Кнопка создания авантюриста
@@ -251,11 +270,7 @@ adventurer_images = load_adventurer_images()
 
 # Игровой мир
 game_world = GameWorld()
-
-# Загружаем и масштабируем фон
-original_town = pygame.image.load("Images/Town.png")
-town = pygame.transform.scale(original_town, (window_width, window_height))
-
+init_windows()
 running = True
 
 while running:
@@ -273,7 +288,11 @@ while running:
 
             for button in buttons:
                 if button.collidepoint(mouse_pos) and button.enabled:
-                    button.execute_action()
+                    win_num = button.execute_action()
+                    if win_num != cur_win_num and len(list_window) > win_num:
+                        cur_win_num = win_num
+                        current_window = list_window[cur_win_num]
+                    break
 
             if creating_adventurer:
                 for button in class_buttons:
@@ -284,7 +303,7 @@ while running:
     for adventurer in adventurers:
         adventurer.update(game_world, time.time())
 
-    screen.blit(town, (0, 0))
+    current_window.draw(screen)
 
     for button in buttons:
         button.draw(screen)
@@ -333,7 +352,7 @@ while running:
             if image:
                 screen.blit(image, (adventurer.x, adventurer.y))
 
-    stats_bg_width = 0.15  # 15% ширины
+    stats_bg_width = 0.07  # 7% ширины
     stats_bg_height = 0.08  # 8% высоты
     stats_bg = pygame.Rect(
         scaling_system.scale_absolute(0.02, True),
@@ -347,7 +366,7 @@ while running:
     total_adventurers = len(adventurers)
     stats_text = f"Авантюристы: {total_adventurers}"
     stats_surface = small_font.render(stats_text, True, BLACK)
-    screen.blit(stats_surface, (scaling_system.scale_absolute(0.03, True),
+    screen.blit(stats_surface, (scaling_system.scale_absolute(0.03),
                                 scaling_system.scale_absolute(0.03, False)))
 
     # Подсказка

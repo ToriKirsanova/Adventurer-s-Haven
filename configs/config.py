@@ -1,4 +1,4 @@
-FPS = 60
+FPS = 30
 SCALE = 1.0
 
 WHITE = (255, 255, 255)
@@ -21,7 +21,7 @@ COLORS = [
 
 
 class ScalingSystem:
-    def __init__(self, reference_width=1920, reference_height=1080):
+    def __init__(self, reference_width=1920, reference_height=360):
         self.reference_width = reference_width
         self.reference_height = reference_height
         self.current_width = reference_width

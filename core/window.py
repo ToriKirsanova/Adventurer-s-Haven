@@ -27,4 +27,4 @@ class Window:
         :param surface: полотно для отрисовки
         """
         for image in self.image_list:
-            surface.blit(image, image.rect)
+            image.draw(surface)
