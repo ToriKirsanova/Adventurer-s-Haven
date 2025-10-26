@@ -1,14 +1,19 @@
+from typing import Tuple
+
 import pygame
 from pathlib import Path
+
 
 class BaseImage:
     """
     Базовый класс для отрисовки
     """
 
-    def __init__(self, image_path: str, x: float, y: float):
+    def __init__(self, image_path: str, x: float, y: float, scale: Tuple[float, float] = None):
         if Path(image_path).exists():
             self.image = pygame.image.load(image_path).convert_alpha()
+            if scale is not None:
+                self.image = pygame.transform.scale(self.image, scale)
             self.rect = self.image.get_rect(topleft=(x, y))
             self.mask = pygame.mask.from_surface(self.image)
         else:
@@ -21,4 +26,3 @@ class BaseImage:
         :param surface: полотно для отрисовки
         """
         surface.blit(self.image, self.rect)
-
